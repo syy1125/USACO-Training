@@ -46,24 +46,6 @@ class Hill
 	int calcCostChangeAt(int newHeight)
 	{
 		int heightDiff = newHeight - height;
-		skidesign.ioh.logNewEntry(skidesign.LogLevel.TRACE);
-		skidesign.ioh.log(height);
-		skidesign.ioh.log(" ");
-		skidesign.ioh.log(newHeight);
-		skidesign.ioh.log(" ");
-		skidesign.ioh.log(heightDiff * 2 + 1);
-		return heightDiff * 2 + 1;
-	}
-
-	/**
-	 * Calculates how much cost will increase or decrease from <code>height</code> to one higher.
-	 * 
-	 * @param height The current height
-	 * @return The cost change
-	 */
-	int calcCostChangeAt(int newHeight)
-	{
-		int heightDiff = newHeight - height;
 		skidesign.ioh.log(skidesign.LogLevel.TRACE, height, " ", newHeight, " ", heightDiff * 2 + 1);
 		return heightDiff * 2 + 1;
 	}
