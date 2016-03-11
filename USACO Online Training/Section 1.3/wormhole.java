@@ -116,7 +116,6 @@ class HoleMap
 class Cow
 {
 	static int currentIndex = 0;
-	static int searchCount = 0;
 
 	HoleMap map;
 	Set<Hole> used;
@@ -162,7 +161,7 @@ class Cow
 	 */
 	boolean searchFrom(Hole exit)
 	{
-		List<Hole> holeTrace = new ArrayList<Hole>();
+		Set<Hole> holeTrace = new HashSet<Hole>();
 		holeTrace.add(exit);
 		
 		Hole nextHole;
@@ -177,12 +176,10 @@ class Cow
 			// Teleport to the linked hole
 			exit = nextHole.linked;
 			
-			int exitIndex = holeTrace.indexOf(exit);
-			if (exitIndex >= 0) {
+			if (!holeTrace.add(exit)) {
 				// Exited from the same hole.
 				return true;
 			}
-			holeTrace.add(exit);
 			
 			if (!used.add(exit))
 			{
@@ -694,7 +691,7 @@ public class wormhole
 
 		ioh.logNewEntry(LogLevel.INFO);
 		ioh.log("Search executed ");
-		ioh.log(Cow.searchCount);
+		ioh.log(Cow.currentIndex);
 		ioh.log(" times.");
 		ioh.output(new String[] { Integer.toString(totalLoops) });
 	}
