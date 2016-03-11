@@ -6,11 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-interface ICloneable<Type> extends Cloneable
-{
-	public Type clone();
-}
-
 enum EnumDir
 {
 	UP, DOWN, LEFT, RIGHT;
