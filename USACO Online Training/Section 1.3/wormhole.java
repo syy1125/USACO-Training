@@ -62,7 +62,7 @@ class Hole
 
 class HoleMap
 {
-	List<Hole> allHoles;
+	ArrayList<Hole> allHoles;
 	
 	HoleMap()
 	{
@@ -104,12 +104,9 @@ class HoleMap
 		return (index >= 0 && allHoles.get(index).linked.equals(h2));
 	}
 	
-	boolean isIncludedIn(HoleMap other)
-	{	
-		for (Hole h : allHoles) {
-			if (!other.hasPair(h, h.linked)) return false;
-		}
-		return true;
+	void sortHoles()
+	{
+		Collections.sort(allHoles, HoleXCompare.instance);
 	}
 }
 
@@ -118,7 +115,6 @@ class HoleMap
  */
 class Cow
 {
-	static List<HoleMap> mapWithLoops = new ArrayList<HoleMap>();
 	static int currentIndex = 0;
 	static int searchCount = 0;
 
@@ -130,6 +126,7 @@ class Cow
 	Cow(HoleMap holeMap)
 	{
 		map = holeMap;
+		map.sortHoles();
 		used = new HashSet<Hole>();
 
 		index = currentIndex;
@@ -137,33 +134,25 @@ class Cow
 	}
 	
 	/**
+	 * Searched for the hole that the cow will enter, assuming that all holes are arranged in increasing x-coordinate order.
+	 * 
 	 * @param from Searches from this hole
 	 * 
 	 * @return The next hole the cow will enter, or null if the cow leaves the map.
 	 */
 	Hole findNextHole(Hole from)
 	{
-		List<Hole> holeList = new ArrayList<Hole>();
+		int index = map.allHoles.indexOf(from) + 1;
 		
-		// Add all the holes with the same y coordinate.
-		for (Hole h : map.allHoles) {
-			if (from.yPos == h.yPos)
-			{
-				holeList.add(h);
+		for (; index < map.allHoles.size(); index ++)
+		{
+			Hole h = map.allHoles.get(index);
+			if (h.yPos == from.yPos) {
+				return h;
 			}
 		}
 		
-		Collections.sort(holeList, HoleXCompare.instance);
-		int index = holeList.indexOf(from);
-		
-		// Try to get the next hole, but it's okay if the index is the last one.
-		Hole next = null;
-		try {
-			next = holeList.get(index + 1);
-		}
-		catch (IndexOutOfBoundsException ex) {}
-		
-		return next;
+		return null;
 	}
 	
 	/**
@@ -191,15 +180,6 @@ class Cow
 			int exitIndex = holeTrace.indexOf(exit);
 			if (exitIndex >= 0) {
 				// Exited from the same hole.
-				// Save the information about this loop into the mapWithLoops.
-				HoleMap loopMap = new HoleMap();
-				Hole pastExit;
-				for (int i = exitIndex; i < holeTrace.size(); i ++) {
-					pastExit = holeTrace.get(i);
-					loopMap.addPair(pastExit, pastExit.linked);
-				}
-				mapWithLoops.add(loopMap);
-
 				return true;
 			}
 			holeTrace.add(exit);
@@ -221,17 +201,6 @@ class Cow
 	 */
 	public boolean search() throws Exception
 	{
-		for (HoleMap loopMap : mapWithLoops) {
-			if (loopMap.isIncludedIn(map)) {
-				wormhole.ioh.logNewEntry(wormhole.LogLevel.DEBUG);
-				wormhole.ioh.log("Found a map with a previously determined loop. Exiting.");
-				return true;
-			}
-		}
-		
-		searchCount ++;
-
-		// Maybe we can save some time by checking to see
 		// Since only the holes are the important things here, why don't we just search from the holes?
 		for (Hole startHole : map.allHoles)
 		{
@@ -241,7 +210,8 @@ class Cow
 			
 			if (searchFrom(startHole)) {
 				wormhole.ioh.logNewEntry(wormhole.LogLevel.TRACE);
-				wormhole.ioh.log("Found an infinite loop in map#", index);
+				wormhole.ioh.log("Found an infinite loop in map#");
+				wormhole.ioh.log(index);
 				return true;
 			}
 		}
@@ -325,7 +295,7 @@ public class wormhole
 			}
 			catch (FileNotFoundException e) {
 				System.err.println("File is not found: " + fileName + ".in");
-				System.exit(1);
+				throw e;
 			}
 			
 			dataList = new LinkedList<String>();
@@ -352,7 +322,12 @@ public class wormhole
 		{
 			test = false;
 			baseLevel = LogLevel.OFF;
-			loadFile();
+			try {
+				loadFile();
+			}
+			catch (IOException e) {
+				initTest();
+			}
 		}
 		
 		/**
@@ -677,7 +652,7 @@ public class wormhole
 
 	public static void main(String[] args) throws Exception
 	{
-		ioh.initTest();
+		ioh.initRun();
 		String[] in = ioh.getData();
 		
 		// Initialize all the holes
@@ -717,8 +692,6 @@ public class wormhole
 		ioh.log("Top-down search completed.");
 		*/
 
-		ioh.logNewEntry(LogLevel.INFO);
-		ioh.log("Final count of basic map with loops is ", Cow.mapWithLoops.size());
 		ioh.logNewEntry(LogLevel.INFO);
 		ioh.log("Search executed ");
 		ioh.log(Cow.searchCount);
