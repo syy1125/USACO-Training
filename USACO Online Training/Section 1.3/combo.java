@@ -26,7 +26,8 @@ class TestHelper
 		log = new ArrayList<String>();
 	}
 	
-	public static String[] readTest() throws IOException
+	public static String[] readTest()
+			throws IOException
 	{
 		return FileIO.readFile(testParent + testName + "\\" + testName + ".in");
 	}
@@ -36,51 +37,19 @@ class TestHelper
 		log.add(msg);
 	}
 	
-	public static void writeTest(String[] contents) throws IOException
+	public static void writeTest(String[] contents)
+			throws IOException
 	{
 		FileIO.writeFile(testParent + testName + "\\" + testName + ".out", contents);
 	}
 	
-	public static void writeLog() throws IOException
+	public static void writeLog()
+			throws IOException
 	{
 		FileIO.writeFile(testParent + testName + "\\" + testName + ".log", log.toArray(new String[log.size()]));
 	}
 }
 
-class FileIO
-{
-	static String[] readFile(String path) throws IOException
-	{
-		
-		BufferedReader in = new BufferedReader(new FileReader(path));
-		List<String> s = new ArrayList<String>();
-		
-		String buffer;
-		while ((buffer = in.readLine()) != null)
-		{
-			s.add(buffer);
-		}
-		
-		in.close();
-		
-		String[] out = s.toArray(new String[s.size()]);
-		return out;
-	}
-	
-	static void writeFile(String path, String[] content) throws IOException
-	{
-		
-		BufferedWriter out = new BufferedWriter(new FileWriter(path));
-		
-		for (int i = 0; i < content.length; i ++)
-		{
-			out.write(content[i]);
-			out.newLine();
-		}
-		
-		out.close();
-	}
-}
 
 class MathUtils
 {
@@ -107,7 +76,7 @@ class LockCombo
 	{
 		int length = keys.length < other.keys.length ? keys.length : other.keys.length;
 		
-		for (int i = 0; i < length; i ++)
+		for (int i = 0; i < length; i++)
 		{
 			if (!MathUtils.closeEnough(keys[i], other.keys[i], limit, TOLERANCE)) return false;
 		}
@@ -121,7 +90,7 @@ class LockCombo
 	{
 		String str = "LockCombo(";
 		
-		for (int i = 0; i < keys.length - 1; i ++)
+		for (int i = 0; i < keys.length - 1; i++)
 		{
 			str += keys[i] + ", ";
 		}
@@ -129,10 +98,11 @@ class LockCombo
 		str += keys[keys.length - 1] + ")";
 		return str;
 	}
-
+	
 }
 
-class ComboSearcher implements Callable<Integer>
+class ComboSearcher
+		implements Callable<Integer>
 {
 	private int limit;
 	private int assigned;
@@ -146,21 +116,24 @@ class ComboSearcher implements Callable<Integer>
 	}
 	
 	@Override
-	public Integer call() throws Exception
+	public Integer call()
+			throws Exception
 	{
 		int count = 0;
 		
-		for (int i = 0; i < limit; i ++) {
+		for (int i = 0; i < limit; i++)
+		{
 			searchLoop:
-			for (int j = 0; j < limit; j ++)
+			for (int j = 0; j < limit; j++)
 			{
-				LockCombo currentCombo = new LockCombo(new int[] { assigned, i, j });
+				LockCombo currentCombo = new LockCombo(new int[]{assigned, i, j});
 				for (LockCombo combo : unlockCombos)
 				{
-					if (currentCombo.closeTo(combo)) {
+					if (currentCombo.closeTo(combo))
+					{
 						// Found a unlockable position, skip to the next combination.
 						// TestHelper.log("Found " + currentCombo + " close to " + combo);
-						count ++;
+						count++;
 						continue searchLoop;
 					}
 				}
@@ -174,7 +147,44 @@ class ComboSearcher implements Callable<Integer>
 
 public class combo
 {
-	public static void main(String[] args) throws IOException, InterruptedException, ExecutionException
+	static class FileIO
+	{
+		static String[] readFile(String path)
+				throws IOException
+		{
+			
+			BufferedReader in = new BufferedReader(new FileReader(path));
+			List<String> s = new ArrayList<>();
+			
+			String buffer;
+			while ((buffer = in.readLine()) != null)
+			{
+				s.add(buffer);
+			}
+			
+			in.close();
+			
+			return s.toArray(new String[s.size()]);
+		}
+		
+		static void writeFile(String path, String[] content)
+				throws IOException
+		{
+			
+			BufferedWriter out = new BufferedWriter(new FileWriter(path));
+			
+			for (String aContent : content)
+			{
+				out.write(aContent);
+				out.newLine();
+			}
+			
+			out.close();
+		}
+	}
+	
+	public static void main(String[] args)
+			throws IOException, InterruptedException, ExecutionException
 	{
 		// TestHelper.init();
 		// String[] in = TestHelper.readTest();
@@ -186,27 +196,27 @@ public class combo
 		
 		// First combo
 		String[] data1 = in[1].split(" ");
-		LockCombo johnCombo = new LockCombo(new int[] { Integer.parseInt(data1[0]) - 1, Integer.parseInt(data1[1]) - 1,
-				Integer.parseInt(data1[2]) - 1 });
+		LockCombo johnCombo = new LockCombo(new int[]{Integer.parseInt(data1[0]) - 1, Integer.parseInt(data1[1]) - 1,
+				Integer.parseInt(data1[2]) - 1});
 		// TestHelper.log("Created unlock combo " + johnCombo);
 		
 		// Second combo
 		String[] data2 = in[2].split(" ");
-		LockCombo masterCombo = new LockCombo(new int[] { Integer.parseInt(data2[0]) - 1, Integer.parseInt(data2[1]) - 1,
-				Integer.parseInt(data2[2]) - 1 });
+		LockCombo masterCombo = new LockCombo(new int[]{Integer.parseInt(data2[0]) - 1, Integer.parseInt(data2[1]) - 1,
+				Integer.parseInt(data2[2]) - 1});
 		// TestHelper.log("Created unlock combo " + masterCombo);
 		
-		LockCombo[] unlocks = { johnCombo, masterCombo };
+		LockCombo[] unlocks = {johnCombo, masterCombo};
 		
 		FutureTask<Integer>[] tasks = new FutureTask[lim];
-		for (int i = 0; i < lim; i ++)
+		for (int i = 0; i < lim; i++)
 		{
 			tasks[i] = new FutureTask<Integer>(new ComboSearcher(lim, i, unlocks));
 			tasks[i].run();
 		}
 		
 		int count = 0;
-		for (int i = 0; i < lim; i ++)
+		for (int i = 0; i < lim; i++)
 		{
 			count += tasks[i].get();
 			// TestHelper.log("Count increased to " + count);
@@ -214,6 +224,6 @@ public class combo
 		
 		// TestHelper.writeTest(new String[] { Integer.toString(count) });
 		// TestHelper.writeLog();
-		FileIO.writeFile("combo.out", new String[] { Integer.toString(count) });
+		FileIO.writeFile("combo.out", new String[]{Integer.toString(count)});
 	}
 }

@@ -13,241 +13,167 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
-import java.util.Set;
 
-class HoleXCompare implements Comparator<Hole>
+class WormH
+		implements Comparable<WormH>
 {
-	public static final HoleXCompare instance = new HoleXCompare();
-
-	public int compare(Hole h1, Hole h2)
-	{
-		return h1.xPos - h2.xPos;
-	}
-}
-
-class Hole
-{
-	int xPos;
-	int yPos;
+	public final int x;
+	public final int y;
 	
-	Hole linked;
+	public WormH linked;
 	
-	public Hole(int x, int y)
+	public WormH(int x, int y)
 	{
-		xPos = x;
-		yPos = y;
+		this.x = x;
+		this.y = y;
 		linked = null;
 	}
 	
-	Hole copy()
+	public void link(WormH other)
 	{
-		return new Hole(xPos, yPos);
+		this.linked = other;
+		other.linked = this;
 	}
 	
 	@Override
-	public boolean equals(Object obj)
+	public int hashCode()
 	{
-		if (obj instanceof Hole) {
-			Hole h = (Hole) obj;
-			return (h.xPos == xPos && h.yPos == yPos);
-		}
-		return false;
+		return x * 23 + y * 17;
+	}
+	
+	@Override
+	public int compareTo(WormH o)
+	{
+		return this.x - o.x;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "Hole@[" + x + "," + y + "]";
 	}
 }
 
 class HoleMap
 {
-	ArrayList<Hole> allHoles;
+	private final WormH[] holes;
 	
-	HoleMap()
+	public HoleMap(WormH[] holes)
 	{
-		allHoles = new ArrayList<Hole>();
+		this.holes = holes;
 	}
 	
-	/**
-	 * Adds a pair of linked wormholes to the map. This method will not link the holes themselves, but copies of the holes, so the original holes are
-	 * safe.
-	 */
-	void addPair(Hole h1, Hole h2)
+	public void configure(int[] config)
 	{
-		Hole hole1 = h1.copy();
-		Hole hole2 = h2.copy();
-		hole1.linked = hole2;
-		hole2.linked = hole1;
-		allHoles.add(hole1);
-		allHoles.add(hole2);
-	}
-	
-	HoleMap copy()
-	{
-		List<Hole> holeBuffer = new ArrayList<Hole>();
-		holeBuffer.addAll(allHoles);
-		HoleMap copy = new HoleMap();
-
-		while (holeBuffer.size() > 0) {
-			Hole firstHole = holeBuffer.remove(0);
-			Hole linked = holeBuffer.remove(holeBuffer.indexOf(firstHole.linked));
-			copy.addPair(firstHole, linked);
-		}
+		ArrayList<WormH> tempHoleList = new ArrayList<>();
+		Collections.addAll(tempHoleList, holes);
 		
-		return copy;
-	}
-	
-	boolean hasPair(Hole h1, Hole h2)
-	{	
-		int index = allHoles.indexOf(h1);
-		return (index >= 0 && allHoles.get(index).linked.equals(h2));
-	}
-	
-	void sortHoles()
-	{
-		Collections.sort(allHoles, HoleXCompare.instance);
-	}
-}
-
-/**
- * A {@code Cow} searches through a map to find any infinite loops.
- */
-class Cow
-{
-	static int currentIndex = 0;
-
-	HoleMap map;
-	Set<Hole> used;
-	int index;
-	
-
-	Cow(HoleMap holeMap)
-	{
-		map = holeMap;
-		map.sortHoles();
-		used = new HashSet<Hole>();
-
-		index = currentIndex;
-		currentIndex ++;
-	}
-	
-	/**
-	 * Searched for the hole that the cow will enter, assuming that all holes are arranged in increasing x-coordinate order.
-	 * 
-	 * @param from Searches from this hole
-	 * 
-	 * @return The next hole the cow will enter, or null if the cow leaves the map.
-	 */
-	Hole findNextHole(Hole from)
-	{
-		int index = map.allHoles.indexOf(from) + 1;
-		
-		for (; index < map.allHoles.size(); index ++)
+		for (int i = config.length - 1; i >= 0; i--)
 		{
-			Hole h = map.allHoles.get(index);
-			if (h.yPos == from.yPos) {
-				return h;
-			}
+			tempHoleList.remove(0).link(tempHoleList.remove(config[i]));
 		}
-		
-		return null;
 	}
 	
-	/**
-	 * @param exit The hole that the cow exited from
-	 * 
-	 * @return Whether an infinite loop is found.
-	 */
-	boolean searchFrom(Hole exit)
+	private WormH raycast(WormH current)
 	{
-		Set<Hole> holeTrace = new HashSet<Hole>();
-		holeTrace.add(exit);
+		WormH result = null;
 		
-		Hole nextHole;
-		while (true)
+		for (WormH hole : holes)
 		{
-			nextHole = findNextHole(exit);
-			if (nextHole == null) {
-				// Escaped
-				return false;
-			}
-			
-			// Teleport to the linked hole
-			exit = nextHole.linked;
-			
-			if (!holeTrace.add(exit)) {
-				// Exited from the same hole.
-				return true;
-			}
-			
-			if (!used.add(exit))
+			if (hole.y == current.y && hole.x > current.x)
 			{
-				// Escaped from here before.
-				return false;
-			}
-
-		}
-	}
-	
-	/**
-	 * Searches in the given map for infinite loops.
-	 * 
-	 * @param index The index of this map, used for debugging purposes
-	 * @return Whether there is an infinite loop in this map
-	 */
-	public boolean search() throws Exception
-	{
-		// Since only the holes are the important things here, why don't we just search from the holes?
-		for (Hole startHole : map.allHoles)
-		{
-			if (used.contains(startHole)) {
-				continue;
-			}
-			
-			if (searchFrom(startHole)) {
-				wormhole.ioh.logNewEntry(wormhole.LogLevel.TRACE);
-				wormhole.ioh.log("Found an infinite loop in map#");
-				wormhole.ioh.log(index);
-				return true;
+				if (result == null || result.x > hole.x)
+				{
+					result = hole;
+				}
 			}
 		}
 		
-		wormhole.ioh.logNewEntry(wormhole.LogLevel.TRACE);
-		wormhole.ioh.log("No loop was found in map#");
-		wormhole.ioh.log(index);
+		return result;
+	}
+	
+	/**
+	 * @return true if starting from this position results in an infinite loop.
+	 */
+	private boolean startFrom(WormH start)
+	{
+		HashSet<WormH> exits = new HashSet<>();
+		exits.add(start);
+		
+		WormH nextEntrance;
+		do
+		{
+			nextEntrance = raycast(start);
+			if (nextEntrance == null)
+			{
+				return false;
+			}
+			start = nextEntrance.linked;
+		}
+		while (exits.add(start));
+		
+		return true;
+	}
+	
+	public boolean hasLoop()
+	{
+		for (WormH hole : holes)
+		{
+			if (startFrom(hole))
+			{
+				return true;
+			}
+		}
 		return false;
 	}
-	
 }
 
-class MutableInt
+interface Processor
 {
-	int value;
-	
-	public MutableInt(int value)
-	{
-		this.value = value;
-	}
+	int process(int in);
 }
 
 public class wormhole
 {
 	/**
 	 * Handles USACO style interaction with files. Also has integrated test methods.
-	 * 
+	 *
 	 * @author syy1125
 	 */
 	static class IOHandler
 	{
+		enum LogLevel
+		{
+			/** The level used to turn logs off */
+			OFF(""),
+			ERROR("ERROR"),
+			WARN("WARN"),
+			INFO("INFO"),
+			DEBUG("DEBUG"),
+			TRACE("TRACE");
+			
+			String msg;
+			int lvl;
+			
+			private LogLevel(String logMsg)
+			{
+				msg = logMsg;
+				lvl = ordinal();
+			}
+		}
+		
 		private static final String newLine = System.getProperty("line.separator");
 		private static final String fileSeparator = System.getProperty("file.separator");
-	
+		
 		private String prgmName;
 		private String fileName;
 		private String[] data;
 		private LinkedList<String> dataList;
-	
+		
 		/** The starting time of the program */
 		private long startTime;
 		/** The <code>DecimalFormat</code> used to format time stamps */
@@ -272,25 +198,30 @@ public class wormhole
 		
 		/**
 		 * Initializes the handler and loads the file. This is universal across all initialization methods.
-		 * 
+		 *
 		 * @throws IOException
 		 */
-		private void loadFile() throws IOException
+		private void loadFile()
+				throws IOException
 		{
-			if (test) {
+			if (test)
+			{
 				// Use the documents folder
 				fileName = System.getProperty("user.home") + fileSeparator + "Documents" + fileSeparator + "USACO Test" + fileSeparator + prgmName
 						+ fileSeparator + prgmName;
 			}
-			else {
+			else
+			{
 				fileName = prgmName;
 			}
 			
 			BufferedReader in = null;
-			try {
+			try
+			{
 				in = new BufferedReader(new FileReader(fileName + ".in"));
 			}
-			catch (FileNotFoundException e) {
+			catch (FileNotFoundException e)
+			{
 				System.err.println("File is not found: " + fileName + ".in");
 				throw e;
 			}
@@ -304,7 +235,7 @@ public class wormhole
 			}
 			
 			data = dataList.toArray(new String[dataList.size()]);
-	
+			
 			in.close();
 			logNewEntry(LogLevel.INFO);
 			log("File reading complete!");
@@ -312,27 +243,31 @@ public class wormhole
 		
 		/**
 		 * Initialize the <code>IOHandler</code> to run conditions.
-		 * 
+		 *
 		 * @throws IOException
 		 */
-		public void initRun() throws IOException
+		public void initRun()
+				throws IOException
 		{
-			test = false;
-			baseLevel = LogLevel.OFF;
-			try {
+			try
+			{
+				test = false;
+				baseLevel = LogLevel.OFF;
 				loadFile();
 			}
-			catch (IOException e) {
+			catch (IOException ex)
+			{
 				initTest();
 			}
 		}
 		
 		/**
 		 * Initialize the <code>IOHandler</code> to test conditions.
-		 * 
+		 *
 		 * @throws IOException
 		 */
-		public void initTest() throws IOException
+		public void initTest()
+				throws IOException
 		{
 			test = true;
 			baseLevel = LogLevel.INFO;
@@ -341,10 +276,11 @@ public class wormhole
 		
 		/**
 		 * Initialize the <code>IOHandler</code> to debug conditions.
-		 * 
+		 *
 		 * @throws IOException
 		 */
-		public void initDebug() throws IOException
+		public void initDebug()
+				throws IOException
 		{
 			test = true;
 			baseLevel = LogLevel.DEBUG;
@@ -353,16 +289,17 @@ public class wormhole
 		
 		/**
 		 * Initialize the <code>IOHandler</code> to trace conditions.
-		 * 
+		 *
 		 * @throws IOException
 		 */
-		public void initTrace() throws IOException
+		public void initTrace()
+				throws IOException
 		{
 			test = true;
 			baseLevel = LogLevel.TRACE;
 			loadFile();
 		}
-	
+		
 		/**
 		 * @return The data stored in the handler which is read from the input file
 		 */
@@ -387,14 +324,15 @@ public class wormhole
 		{
 			return dataList.listIterator(startIndex);
 		}
-	
+		
 		/**
 		 * Outputs the specified content to the output file.
-		 * 
+		 *
 		 * @param content The content of the output
 		 * @throws IOException
 		 */
-		public void output(String[] content) throws IOException
+		public void output(String[] content)
+				throws IOException
 		{
 			BufferedWriter out = new BufferedWriter(new FileWriter(fileName + ".out"));
 			
@@ -406,7 +344,7 @@ public class wormhole
 			
 			logNewEntry(LogLevel.INFO);
 			log("Main output writing complete.");
-	
+			
 			if (test)
 			{
 				// Write the output log
@@ -415,7 +353,7 @@ public class wormhole
 				out.write(logBuilder.toString());
 				out.newLine();
 			}
-	
+			
 			System.out.println("Output complete.");
 			out.close();
 			System.exit(0);
@@ -423,18 +361,19 @@ public class wormhole
 		
 		/**
 		 * Adds the header for a log entry.
-		 * 
+		 *
 		 * @param level The priority level of the log message
 		 * @return Whether the log should be added
 		 */
 		public void logNewEntry(LogLevel level)
 		{
 			// Only log the information above the base level
-			if (level.lvl > baseLevel.lvl) {
+			if (level.lvl > baseLevel.lvl)
+			{
 				doLog = false;
 				return;
 			}
-	
+			
 			// Add a new line for this message
 			logBuilder.append(newLine);
 			
@@ -530,169 +469,90 @@ public class wormhole
 			// Only log if the level is correct.
 			if (!doLog) return;
 			// Log.
-			for (Object obj : args) {
+			for (Object obj : args)
+			{
 				logBuilder.append(obj);
 			}
 		}
 	}
-
-	static enum LogLevel
+	
+	static IOHandler ioh;
+	
+	private static ArrayList<Processor> processors = new ArrayList<>();
+	
+	private static Processor getProcessor(int index)
 	{
-		/** The level used to turn logs off */
-		OFF(""),
-		ERROR("ERROR"),
-		WARN("WARN"),
-		INFO("INFO"),
-		DEBUG("DEBUG"),
-		TRACE("TRACE");
-		
-		String msg;
-		int lvl;
-		
-		private LogLevel(String logMsg)
+		Processor p;
+		if (processors.size() > index && (p = processors.get(index)) != null)
 		{
-			msg = logMsg;
-			lvl = ordinal();
+			return p;
+		}
+		else
+		{
+			int divisionFactor = 1;
+			for (int i = 1; i < index; i++)
+			{
+				divisionFactor *= 2 * i + 1;
+			}
+			final int finalDivisionFactor = divisionFactor;
+			final int finalModuloFactor = index * 2 + 1;
+			
+			p = in -> (in / finalDivisionFactor) % finalModuloFactor;
+			
+			processors.add(index, p);
+			
+			return p;
 		}
 	}
-
-	static IOHandler ioh = new IOHandler("wormhole");
 	
 	/**
-	 * Attempts to create all the possible pairing in a map with the given holes.
-	 * 
-	 * @param holes The list of available holes
-	 * @return All the maps using the unique possible pairings of the holes
+	 * Each element of the return array indicates which other hole should the current one be paired with. 0 indicates the next one, 1 indicates the hole at index + 2, etc.
+	 * The output array should be read BACKWARDS.
 	 */
-	static List<HoleMap> tryPairHoles(List<Hole> holes)
+	private static int[] indexToConfig(int index, int arrayLength)
 	{
-		List<HoleMap> mapList = new ArrayList<HoleMap>();
-
-		// This is the last pair
-		if (holes.size() <= 2)
+		int[] config = new int[arrayLength];
+		
+		for (int i = 0; i < arrayLength; i++)
 		{
-			HoleMap map = new HoleMap();
-			map.addPair(holes.get(0), holes.get(1));
-			mapList.add(map);
-			return mapList;
+			config[i] = getProcessor(i).process(index);
 		}
 		
-		// Remove the 1st hole
-		Hole hole2 = holes.remove(0);
-		for (int i = 0; i < holes.size(); i ++)
-		{
-			// Temporarily remove the taken hole
-			Hole hole1 = holes.remove(i);
-			List<HoleMap> subMapList = tryPairHoles(holes);
-			
-			for (HoleMap subMap : subMapList)
-			{
-				subMap.addPair(hole1, hole2);
-			}
-			
-			// Add back the removed hole
-			holes.add(i, hole1);
-			mapList.addAll(subMapList);
-		}
-		holes.add(0, hole2);
-		
-		return mapList;
+		return config;
 	}
 	
-	static int subMapCount(int holeCount)
+	public static void main(String[] args)
+			throws IOException
 	{
-		if (holeCount <= 2) return 1;
-		return (holeCount - 1) * subMapCount(holeCount - 2);
-	}
-	
-	static void topDownSearch(List<Hole> holes, HoleMap superMap, MutableInt storage) throws Exception
-	{	
-		HoleMap map = superMap.copy();
-		
-		// This is the last pair
-		if (holes.size() <= 2)
-		{
-			map.addPair(holes.get(0), holes.get(1));
-			if (new Cow(map).search()) {
-				storage.value ++;
-			}
-			
-			return;
-		}
-		
-		// Remove the 1st hole
-		Hole hole2 = holes.remove(0);
-		for (int i = 0; i < holes.size(); i ++)
-		{
-			// Temporarily remove the taken hole
-			Hole hole1 = holes.remove(i);
-			map = superMap.copy();
-			map.addPair(hole1, hole2);
-			
-			// If this map already has a loop, we don't need to search further.
-			if (new Cow(map).search()) {
-				int weight = subMapCount(holes.size());
-				wormhole.ioh.logNewEntry(LogLevel.DEBUG);
-				wormhole.ioh.log("Skipped ", weight, " submaps because of loop found in supermap.");
-				storage.value += weight;
-			}
-			// Otherwise, search deeper down.
-			else {
-				topDownSearch(holes, map, storage);
-			}
-
-			// Add back the removed hole
-			holes.add(i, hole1);
-		}
-		holes.add(0, hole2);
-	}
-
-	public static void main(String[] args) throws Exception
-	{
+		ioh = new IOHandler("wormhole");
 		ioh.initRun();
-		String[] in = ioh.getData();
 		
-		// Initialize all the holes
-		int holeCount = in.length - 1;
-		List<Hole> holes = new ArrayList<Hole>();
-		for (int i = 0; i < holeCount; i ++)
+		Iterator<String> inputIterator = ioh.getIterator();
+		WormH[] holes = new WormH[Integer.parseInt(inputIterator.next())];
+		for (int i = 0; i < holes.length; i++)
 		{
-			String[] coordData = in[i + 1].split(" ");
-			holes.add(new Hole(Integer.parseInt(coordData[0]), Integer.parseInt(coordData[1])));
+			String[] coordinates = inputIterator.next().split(" ");
+			holes[i] = new WormH(Integer.parseInt(coordinates[0]), Integer.parseInt(coordinates[1]));
 		}
-
-		// Find out all the possibilities
-		List<HoleMap> possibilities = tryPairHoles(holes);
-		ioh.logNewEntry(LogLevel.INFO);
-		ioh.log("Found ");
-		ioh.log(possibilities.size());
-		ioh.log(" possible pairings with the current maps.");
-
-		int totalLoops = 0;
-
-		for (HoleMap map : possibilities)
+		
+		HoleMap map = new HoleMap(holes);
+		
+		int numConfigs = 1;
+		for (int i = 0; i < holes.length / 2; i++)
 		{
-			if (new Cow(map).search()) {
-				totalLoops ++;
+			numConfigs *= 2 * i + 1;
+		}
+		
+		int loopCount = 0;
+		for (int i = 0; i < numConfigs; i++)
+		{
+			map.configure(indexToConfig(i, holes.length / 2));
+			if (map.hasLoop())
+			{
+				loopCount++;
 			}
 		}
-		ioh.logNewEntry(LogLevel.INFO);
-		ioh.log("Search complete.");
 		
-		/*
-		ioh.newLogEntry(LogLevel.INFO);
-		ioh.log("Initiating alternative top-down search method.");
-		MutableInt result = new MutableInt(0);
-		topDownSearch(holes, new HoleMap(), result);
-		totalLoops = result.value;
-		ioh.newLogEntry(LogLevel.INFO);
-		ioh.log("Top-down search completed.");
-		*/
-
-		ioh.logNewEntry(LogLevel.INFO);
-		ioh.log("Search executed ");
-		ioh.log(Cow.currentIndex);
-		ioh.log(" times.");
-		ioh.output(new String[] { Integer.toString(totalLoops) });
+		ioh.output(new String[]{Integer.toString(loopCount)});
 	}
 }

@@ -15,14 +15,15 @@ import java.util.ListIterator;
  */
 class IOHandler
 {
-	private static final String newLine = System.getProperty("line.separator");
-	private static final String fileSeparator = System.getProperty("file.separator");
-
+	private static final String SPACE = " ";
+	private static final String NEW_LINE = System.getProperty("line.separator");
+	private static final String FILE_SEPARATOR = System.getProperty("file.separator");
+	
 	private String prgmName;
 	private String fileName;
 	private String[] data;
 	private LinkedList<String> dataList;
-
+	
 	/** The starting time of the program */
 	private long startTime;
 	/** The <code>DecimalFormat</code> used to format time stamps */
@@ -54,8 +55,8 @@ class IOHandler
 	{
 		if (test) {
 			// Use the documents folder
-			fileName = System.getProperty("user.home") + fileSeparator + "Documents" + fileSeparator + "USACO Test" + fileSeparator + prgmName
-					+ fileSeparator + prgmName;
+			fileName = System.getProperty("user.home") + FILE_SEPARATOR + "Documents" + FILE_SEPARATOR + "USACO Test" + FILE_SEPARATOR + prgmName
+					+ FILE_SEPARATOR + prgmName;
 		}
 		else {
 			fileName = prgmName;
@@ -73,16 +74,14 @@ class IOHandler
 		dataList = new LinkedList<String>();
 		
 		String buffer;
-		while ((buffer = in.readLine()) != null)
-		{
+		while ((buffer = in.readLine()) != null) {
 			dataList.add(buffer);
 		}
 		
 		data = dataList.toArray(new String[dataList.size()]);
-
+		
 		in.close();
-		newLogEntry(LogLevel.INFO);
-		log("File reading complete!");
+		log(LogLevel.INFO, "File reading complete!");
 	}
 	
 	/**
@@ -132,7 +131,7 @@ class IOHandler
 		baseLevel = LogLevel.TRACE;
 		loadFile();
 	}
-
+	
 	/**
 	 * @return The data stored in the handler which is read from the input file
 	 */
@@ -157,7 +156,7 @@ class IOHandler
 	{
 		return dataList.listIterator(startIndex);
 	}
-
+	
 	/**
 	 * Outputs the specified content to the output file.
 	 * 
@@ -168,153 +167,71 @@ class IOHandler
 	{
 		BufferedWriter out = new BufferedWriter(new FileWriter(fileName + ".out"));
 		
-		for (String line : content)
-		{
+		for (String line : content) {
 			out.write(line);
 			out.newLine();
 		}
 		
-		newLogEntry(LogLevel.INFO);
-		log("Main output writing complete.");
-
-		if (test)
-		{
+		log(LogLevel.INFO, "Main output writing complete.");
+		
+		if (test) {
 			// Write the output log
 			out.newLine();
 			out.write("Log:");
 			out.write(logBuilder.toString());
 			out.newLine();
 		}
-
+		
 		System.out.println("Output complete.");
 		out.close();
 		System.exit(0);
 	}
 	
 	/**
-	 * Adds the header for a log entry.
-	 * 
-	 * @param level The priority level of the log message
-	 * @return Whether the log should be added
+	 * Appends some information about the log, such as the time after start, to the log builder.
+	 * <p>
+	 * This function will wrap the argument {@code msg} in square brackets and append a space after it.
 	 */
-	public void newLogEntry(LogLevel level)
+	private void appendLogInfo(String msg)
 	{
-		// Only log the information above the base level
-		if (level.lvl > baseLevel.lvl) {
-			doLog = false;
+		logBuilder.append('[');
+		logBuilder.append(msg);
+		logBuilder.append(']');
+		logBuilder.append(SPACE);
+	}
+	
+	/**
+	 * Adds a log entry to the program log.
+	 * 
+	 * @param level The level of the log; the message will not be recorded if the level is too low
+	 * @param args The information to log
+	 */
+	public void log(LogLevel level, Object... args)
+	{
+		// Check log level
+		if (level.lvl >= baseLevel.lvl) {
 			return;
 		}
-
-		// Add a new line for this message
-		logBuilder.append(newLine);
 		
-		// Time
-		logBuilder.append('[');
-		logBuilder.append(timeFormat.format((System.currentTimeMillis() - startTime) / 1000F));
-		logBuilder.append(']');
+		// Log the time and level.
+		appendLogInfo(timeFormat.format((System.currentTimeMillis() - startTime) / 1000D));
+		appendLogInfo(level.msg);
 		
-		// Level
-		logBuilder.append('[');
-		logBuilder.append(level.msg);
-		logBuilder.append(']');
-		logBuilder.append(' ');
-		
-		// Continue
-		doLog = true;
-	}
-	
-	public void log(boolean b)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(b);
-	}
-	
-	public void log(char c)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(c);
-	}
-	
-	public void log(char[] c)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(c);
-	}
-	
-	public void log(double d)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(d);
-	}
-	
-	public void log(float f)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(f);
-	}
-	
-	public void log(int i)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(i);
-	}
-	
-	public void log(long l)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(l);
-	}
-	
-	public void log(String message)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(message);
-	}
-	
-	public void log(Object obj)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
-		logBuilder.append(obj);
-	}
-	
-	public void log(Object... args)
-	{
-		// Only log if the level is correct.
-		if (!doLog) return;
-		// Log.
+		// Log the arguments.
 		for (Object obj : args) {
 			logBuilder.append(obj);
+			logBuilder.append(SPACE);
 		}
+		
+		// New line
+		logBuilder.append(NEW_LINE);
 	}
 }
 
 enum LogLevel
 {
 	/** The level used to turn logs off */
-	OFF(""),
-	ERROR("ERROR"),
-	WARN("WARN"),
-	INFO("INFO"),
-	DEBUG("DEBUG"),
-	TRACE("TRACE");
+	OFF(""), ERROR("ERROR"), WARN("WARN"), INFO("INFO"), DEBUG("DEBUG"), TRACE("TRACE");
 	
 	String msg;
 	int lvl;
