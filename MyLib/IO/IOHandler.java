@@ -85,6 +85,7 @@ class IOHandler
 		try
 		{
 			in = new BufferedReader(new FileReader(fileName + ".in"));
+			System.out.println("Loaded file: " + fileName + ".in");
 		}
 		catch (FileNotFoundException e)
 		{
@@ -291,7 +292,7 @@ class IOHandler
 	 */
 	public void debug(Object... args)
 	{
-		log(LogLevel.TRACE, args);
+		log(LogLevel.DEBUG, args);
 	}
 	
 	/**
@@ -299,7 +300,7 @@ class IOHandler
 	 */
 	public void info(Object... args)
 	{
-		log(LogLevel.TRACE, args);
+		log(LogLevel.INFO, args);
 	}
 	
 	/**
@@ -307,7 +308,7 @@ class IOHandler
 	 */
 	public void warn(Object... args)
 	{
-		log(LogLevel.TRACE, args);
+		log(LogLevel.WARN, args);
 	}
 	
 	/**
@@ -315,6 +316,6 @@ class IOHandler
 	 */
 	public void error(Object... args)
 	{
-		log(LogLevel.TRACE, args);
+		log(LogLevel.ERROR, args);
 	}
 }
