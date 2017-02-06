@@ -8,9 +8,25 @@ import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+
+enum LogLevel
+{
+	/** The level used to turn logs off */
+	OFF(""), ERROR("ERROR"), WARN("WARN"), INFO("INFO"), DEBUG("DEBUG"), TRACE("TRACE");
+	
+	String msg;
+	int lvl;
+	
+	private LogLevel(String logMsg)
+	{
+		msg = logMsg;
+		lvl = ordinal();
+	}
+}
+
 /**
  * Handles USACO style interaction with files. Also has integrated test methods.
- * 
+ *
  * @author syy1125
  */
 class IOHandler
@@ -48,33 +64,39 @@ class IOHandler
 	
 	/**
 	 * Initializes the handler and loads the file. This is universal across all initialization methods.
-	 * 
+	 *
 	 * @throws IOException
 	 */
-	private void loadFile() throws IOException
+	private void loadFile()
+			throws IOException
 	{
-		if (test) {
+		if (test)
+		{
 			// Use the documents folder
 			fileName = System.getProperty("user.home") + FILE_SEPARATOR + "Documents" + FILE_SEPARATOR + "USACO Test" + FILE_SEPARATOR + prgmName
 					+ FILE_SEPARATOR + prgmName;
 		}
-		else {
+		else
+		{
 			fileName = prgmName;
 		}
 		
 		BufferedReader in = null;
-		try {
+		try
+		{
 			in = new BufferedReader(new FileReader(fileName + ".in"));
 		}
-		catch (FileNotFoundException e) {
+		catch (FileNotFoundException e)
+		{
 			System.err.println("File is not found: " + fileName + ".in");
-			System.exit(1);
+			throw e;
 		}
 		
 		dataList = new LinkedList<String>();
 		
 		String buffer;
-		while ((buffer = in.readLine()) != null) {
+		while ((buffer = in.readLine()) != null)
+		{
 			dataList.add(buffer);
 		}
 		
@@ -86,22 +108,31 @@ class IOHandler
 	
 	/**
 	 * Initialize the <code>IOHandler</code> to run conditions.
-	 * 
+	 *
 	 * @throws IOException
 	 */
-	public void initRun() throws IOException
+	public void initRun()
+			throws IOException
 	{
-		test = false;
-		baseLevel = LogLevel.OFF;
-		loadFile();
+		try
+		{
+			test = false;
+			baseLevel = LogLevel.OFF;
+			loadFile();
+		}
+		catch (IOException e)
+		{
+			initTest();
+		}
 	}
 	
 	/**
 	 * Initialize the <code>IOHandler</code> to test conditions.
-	 * 
+	 *
 	 * @throws IOException
 	 */
-	public void initTest() throws IOException
+	public void initTest()
+			throws IOException
 	{
 		test = true;
 		baseLevel = LogLevel.INFO;
@@ -110,10 +141,11 @@ class IOHandler
 	
 	/**
 	 * Initialize the <code>IOHandler</code> to debug conditions.
-	 * 
+	 *
 	 * @throws IOException
 	 */
-	public void initDebug() throws IOException
+	public void initDebug()
+			throws IOException
 	{
 		test = true;
 		baseLevel = LogLevel.DEBUG;
@@ -122,10 +154,11 @@ class IOHandler
 	
 	/**
 	 * Initialize the <code>IOHandler</code> to trace conditions.
-	 * 
+	 *
 	 * @throws IOException
 	 */
-	public void initTrace() throws IOException
+	public void initTrace()
+			throws IOException
 	{
 		test = true;
 		baseLevel = LogLevel.TRACE;
@@ -159,25 +192,29 @@ class IOHandler
 	
 	/**
 	 * Outputs the specified content to the output file.
-	 * 
+	 *
 	 * @param content The content of the output
 	 * @throws IOException
 	 */
-	public void output(String[] content) throws IOException
+	public void output(String[] content)
+			throws IOException
 	{
 		BufferedWriter out = new BufferedWriter(new FileWriter(fileName + ".out"));
 		
-		for (String line : content) {
+		for (String line : content)
+		{
 			out.write(line);
 			out.newLine();
 		}
 		
 		log(LogLevel.INFO, "Main output writing complete.");
 		
-		if (test) {
+		if (test)
+		{
 			// Write the output log
 			out.newLine();
 			out.write("Log:");
+			out.newLine();
 			out.write(logBuilder.toString());
 			out.newLine();
 		}
@@ -185,6 +222,18 @@ class IOHandler
 		System.out.println("Output complete.");
 		out.close();
 		System.exit(0);
+	}
+	
+	/**
+	 * A convenience function to output one single line.
+	 *
+	 * @param content The content of the output
+	 * @throws IOException
+	 */
+	public void output(String content)
+			throws IOException
+	{
+		output(new String[] {content});
 	}
 	
 	/**
@@ -202,14 +251,15 @@ class IOHandler
 	
 	/**
 	 * Adds a log entry to the program log.
-	 * 
+	 *
 	 * @param level The level of the log; the message will not be recorded if the level is too low
-	 * @param args The information to log
+	 * @param args  The information to log
 	 */
 	public void log(LogLevel level, Object... args)
 	{
 		// Check log level
-		if (level.lvl >= baseLevel.lvl) {
+		if (level.lvl > baseLevel.lvl)
+		{
 			return;
 		}
 		
@@ -218,7 +268,8 @@ class IOHandler
 		appendLogInfo(level.msg);
 		
 		// Log the arguments.
-		for (Object obj : args) {
+		for (Object obj : args)
+		{
 			logBuilder.append(obj);
 			logBuilder.append(SPACE);
 		}
@@ -226,19 +277,44 @@ class IOHandler
 		// New line
 		logBuilder.append(NEW_LINE);
 	}
-}
-
-enum LogLevel
-{
-	/** The level used to turn logs off */
-	OFF(""), ERROR("ERROR"), WARN("WARN"), INFO("INFO"), DEBUG("DEBUG"), TRACE("TRACE");
 	
-	String msg;
-	int lvl;
-	
-	private LogLevel(String logMsg)
+	/**
+	 * A convenience function to print to trace.
+	 */
+	public void trace(Object... args)
 	{
-		msg = logMsg;
-		lvl = ordinal();
+		log(LogLevel.TRACE, args);
+	}
+	
+	/**
+	 * A convenience function to print to debug.
+	 */
+	public void debug(Object... args)
+	{
+		log(LogLevel.TRACE, args);
+	}
+	
+	/**
+	 * A convenience function to print to info.
+	 */
+	public void info(Object... args)
+	{
+		log(LogLevel.TRACE, args);
+	}
+	
+	/**
+	 * A convenience function to print to warn.
+	 */
+	public void warn(Object... args)
+	{
+		log(LogLevel.TRACE, args);
+	}
+	
+	/**
+	 * A convenience function to print to error.
+	 */
+	public void error(Object... args)
+	{
+		log(LogLevel.TRACE, args);
 	}
 }
