@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../MyLib/MyLib.iml" filepath="$PROJECT_DIR$/../MyLib/MyLib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/USACO Online Training.iml" filepath="$PROJECT_DIR$/USACO Online Training.iml" />
+    </modules>
+  </component>
+</project>
